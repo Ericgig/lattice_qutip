@@ -67,8 +67,8 @@ F1crys.display_model()
 F1crys.dispersion(kpoints = 101, k_start = -2*pi, k_end = 2*pi, to_display = 1)
 
 
-(Hamt,vals,vecs) = F1crys.form_specified_unit_cell(n_units = 10,PBC=0, eig_spectra = 1, eig_vectors = 1 )
-#print(Hamt)
+(Hamt,vals,vecs) = F1crys.form_specified_unit_cell(n_units = 2,PBC=0, eig_spectra = 1, eig_vectors = 1 )
+print(Hamt)
 
 
 

@@ -32,6 +32,12 @@
 ###############################################################################
 __all__ = ['Qbasis','Qcrystal']
 from matplotlib.pyplot import *
+
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+
 import warnings
 import types
 
@@ -169,7 +175,7 @@ class Qcrystal(Qobj):
         self._width_1 = width_1       # number of unit cells in aperiodic dimension 1
         self._width_2 = width_2       # number of unit cells in aperiodic dimension 2        
         self._periodic_dimensions = periodic_dimensions
-        
+
 
 
     def input_super_unit_cell(self, super_unit_cell):
@@ -260,8 +266,28 @@ class Qcrystal(Qobj):
 #            (eval,eig)=_nicefy_eig(eval,eig)
             return (vals,vecs)
         
+
+
+    def dispersion(self, to_display = 0 , kdim1 = [] , kdim2 = []):
+
+                
+        if (  self._periodic_dimensions == 1  ) :
+            k_start = kdim1[0]; k_end = kdim1[1]; kpoints = kdim1[2]
+            (kxA,val_ks) = self._dispersion_1d(kpoints, k_start, k_end, to_display)        
+            return (kxA,val_ks)
+
+
+        if (  self._periodic_dimensions == 2  ) :
+            k1_start = kdim1[0]; k1_end = kdim1[1]; k1points = kdim1[2]
+            k2_start = kdim2[0]; k2_end = kdim2[1]; k2points = kdim2[2]                        
+            (kxA,kyA,val_ks) = self._dispersion_2d(k1points, k1_start, k1_end, k2points, k2_start, k2_end, to_display)        
+            return (kxA,kyA,val_ks)
+    
         
-    def dispersion(self, kpoints = 51, k_start = -pi, k_end = pi, to_display = 0):
+        
+        
+        
+    def _dispersion_1d(self, kpoints = 51, k_start = -pi, k_end = pi, to_display = 0):
         
         if (kpoints % 2 == 0 or (not isinstance(kpoints, int))  ) :
             raise Exception("\n\nPlease choose an odd integer for kpoints!")        
@@ -275,7 +301,7 @@ class Qcrystal(Qobj):
         for ks in range(kpoints):
             kx = k_start + (ks*(k_end-k_start)/k_1)
             kxA[ks,0] = kx
-            for i in range(np.shape(self._inter_hopping_array)[0]):
+            for i in range(  len(self._inter_hopping_array)  ):
                 Odat[self._inter_hopping_array[i][0],self._inter_hopping_array[i][1]] = self._inter_hopping_array[i][2] * exp(complex(0,kx))
                 Odat[self._inter_hopping_array[i][1],self._inter_hopping_array[i][0]] = np.conj(self._inter_hopping_array[i][2] )* exp(complex(0,-kx))     
 
@@ -296,12 +322,81 @@ class Qcrystal(Qobj):
             show(fig)
             fig.savefig('./Dispersion.pdf')
 
-
-
         return (kxA,val_ks)
     
     
-    
+        
+    def _dispersion_2d(self, k1points=51, k1_start=-pi, k1_end=pi, k2points=51, k2_start=-pi, k2_end=pi, to_display=0):
+        
+        if (k1points % 2 == 0 or (not isinstance(k1points, int))  ) :
+            raise Exception("\n\nPlease choose an odd integer for k1points!")        
+        
+        if (k2points % 2 == 0 or (not isinstance(k2points, int))  ) :
+            raise Exception("\n\nPlease choose an odd integer for k2points!")        
+        
+        
+        
+
+        val_ks=np.zeros((self._Qbasis._number_of_orbitals,k1points,k2points),dtype=float)
+        kxA = np.zeros((k1points,1),dtype=float)
+        kyA = np.zeros((k2points,1),dtype=float)
+        
+        G0_H = self._Qbasis.basis_Hamiltonian()
+        print(G0_H)
+        
+        
+        k_1 = (k1points-1);  k_2 = (k2points-1); 
+        for ks in range(k1points):
+            kx = k1_start + (ks*(k1_end-k1_start)/k_1)
+            for kt in range(k2points):            
+                ky = k2_start + (kt*(k2_end-k2_start)/k_2)
+            
+#                print(kx,ky)            
+                Odat = np.zeros( (self._Qbasis._number_of_orbitals,self._Qbasis._number_of_orbitals),dtype=complex)
+                kxA[ks,0] = kx;  kyA[kt,0] = ky
+                for i in range(  len(self._inter_hopping_array)  ):                    
+                    kx_C = self._inter_hopping_array[i][3][0]*self._basis_vector_array[0][0]  +  self._inter_hopping_array[i][3][1]*self._basis_vector_array[1][0]
+                    ky_C = self._inter_hopping_array[i][3][0]*self._basis_vector_array[0][1]  +  self._inter_hopping_array[i][3][1]*self._basis_vector_array[1][1]                
+
+                    Odat[self._inter_hopping_array[i][0],self._inter_hopping_array[i][1]] = Odat[self._inter_hopping_array[i][0],self._inter_hopping_array[i][1]] + self._inter_hopping_array[i][2] * exp(complex(0, (kx* kx_C + ky* ky_C)       ))
+                    Odat[self._inter_hopping_array[i][1],self._inter_hopping_array[i][0]] = Odat[self._inter_hopping_array[i][1],self._inter_hopping_array[i][0]] + np.conj(self._inter_hopping_array[i][2] )* exp(complex(0, -(kx* kx_C + ky* ky_C)    ))     
+
+
+
+
+                Of_d = csr_matrix(Odat, dtype=complex)
+                H_k = G0_H+Of_d
+
+#               (vals, vecs) = self._diag_a_matrix(H_k, calc_evecs = True)
+                vals = self._diag_a_matrix(H_k, calc_evecs = False)                
+                
+                val_ks[:,ks,kt] = vals[:]
+
+
+
+        if (to_display == 1) :
+            
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+#            x = y = np.arange(-3.0, 3.0, 0.05)
+#            X, Y = np.meshgrid(x, y)
+#            zs = np.array(fun(np.ravel(X), np.ravel(Y)))
+#            Z = zs.reshape(X.shape)
+
+            A_kX, A_kY = np.meshgrid(kxA, kyA)
+            ax.plot_surface(A_kX, A_kY, val_ks[0,:,:])
+            ax.plot_surface(A_kX, A_kY, val_ks[1,:,:])
+            ax.set_xlabel('kx')
+            ax.set_ylabel('ky')
+            ax.set_zlabel('E(kx,ky)')
+
+            plt.show()
+
+
+
+
+        return (kxA,kyA,val_ks)
+        
     
     
 
@@ -318,7 +413,9 @@ class Qcrystal(Qobj):
         H_base = self._Qbasis.basis_Hamiltonian().todense()
 #        return Unit_Hamiltonian0
         T_coup = np.zeros( (self._Qbasis._number_of_orbitals,self._Qbasis._number_of_orbitals),dtype=complex)
-        for i in range(np.shape(self._inter_hopping_array)[0]):
+
+
+        for i in range(   len(self._inter_hopping_array)   ):
             if (self._inter_hopping_array[i][0] < self._inter_hopping_array[i][1] ):
                 T_coup[self._inter_hopping_array[i][1],self._inter_hopping_array[i][0]] = self._inter_hopping_array[i][2] 
             else:                
@@ -358,9 +455,11 @@ class Qcrystal(Qobj):
         if ( eig_spectra == 1 and  eig_vectors == 1 ):
             (vals, vecs)=np.linalg.eigh(Hamt)
 
+        k1_start = -pi; k1_end = pi; kpoints1 = 51;
+        kdim1 = [k1_start,k1_end,kpoints1]
         
-
-        (kxA,val_ks) = self.dispersion(kpoints = 51, k_start = -pi, k_end = pi, to_display = 0)
+        to_display = 1;
+        (kxA,val_ks) = self.dispersion(to_display, kdim1 )
     
         ind_e1 = np.arange(0, 1, 2/2/n_units)
         ind_e2 = np.arange(-1, 0, 2/2/n_units)
