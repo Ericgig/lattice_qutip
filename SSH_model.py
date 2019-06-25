@@ -27,9 +27,15 @@ F1.input_super_unit_cell(super_unit_cell)
 
 
 F1crys = Qcrystal(F1)
-F1crys.input_super_unit_cell(super_unit_cell)
-F1crys.dispersion(kpoints = 101, k_start = -2*pi, k_end = 2*pi, to_display = 1)
-(Hamt,vals,vecs) = F1crys.form_specified_unit_cell(n_units = 50,PBC=0, eig_spectra = 1, eig_vectors = 1 )
+IsComplete = F1crys.input_super_unit_cell(super_unit_cell)
+
+k1_start = -pi; k1_end = pi; kpoints1 = 51;
+kdim1 = [k1_start,k1_end,kpoints1]
+to_display = 0;
+F1crys.display_model()
+(kxA,val_ks) = F1crys.dispersion(  to_display, kdim1)
+
+(Hamt,vals,vecs) = F1crys.space_Hamiltonian(n_units = 50,PBC=0, eig_spectra = 1, eig_vectors = 1 )
 
 xA = np.arange(0,100,1)
 

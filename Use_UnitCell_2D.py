@@ -6,6 +6,7 @@ Created on Tue Jun 18 01:35:46 2019
 @author: ssaumya7
 """
 from qutip import *
+from qutip.latticeclass import *
 from numpy import *
 import numpy as np
 #from qutip.latticeclass import UnitCell
@@ -25,7 +26,7 @@ onsite_energy_array = [eps0, eps1]
 position_array = [pos0, pos1]
 
 ###  [...[orbital_m,orbital_n,hopping_mn],[orbital_p,orbital_q,hopping_pq]...]
-intra_hopping_array=[[0,1,t]]
+intra_hopping_array=[(0,1,t)]
 
 F1 = Qbasis(onsite_energy_array, position_array ,intra_hopping_array, dimensions, number_of_orbitals)
 
@@ -53,7 +54,7 @@ to_display = 1;
 (kxA,kyA,val_ks) = F1crys.dispersion(to_display, kdim1, kdim2 )
 
 
-#(Hamt,vals,vecs) = F1crys.form_specified_unit_cell(n_units = 10,PBC=0, eig_spectra = 1, eig_vectors = 1 )
+#(Hamt,vals,vecs) = F1crys.space_Hamiltonian(n_units = 10,PBC=0, eig_spectra = 1, eig_vectors = 1 )
 #print(Hamt)
 
 

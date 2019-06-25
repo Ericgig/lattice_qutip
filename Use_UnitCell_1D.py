@@ -6,12 +6,13 @@ Created on Tue Jun  4 16:51:37 2019
 @author: ssaumya7
 """
 from qutip import *
+from qutip.latticeclass import *
 from numpy import *
 import numpy as np
 
 
 eps0 = 0.0; eps1 = 0.0;
-t = -1.0; tp = -1.0;
+t = -0.5; tp = -1.0;
 x_vec = [1] 
 
 pos0 = [0.0]; pos1 = [0.5];
@@ -37,7 +38,7 @@ F1.display_model()
 
 basis_vector_array = [[1]]
 #basis_vector_array = [[]]
-inter_hopping_array=[(0,1,t,x_vec)]
+inter_hopping_array=[(0,1,tp,x_vec)]
 F1crys = Qcrystal(F1,inter_hopping_array,basis_vector_array,periodic_dimensions)
 F1crys.display_model()
 #F1crys.dispersion()
@@ -48,11 +49,18 @@ kdim1 = [k1_start,k1_end,kpoints1]
 to_display = 0;
 (kxA,val_ks) = F1crys.dispersion(  to_display, kdim1)
 
+xA = np.arange(0,100,1)
 
 
-(Hamt,vals,vecs) = F1crys.form_specified_unit_cell(n_units = 10,PBC=0, eig_spectra = 1, eig_vectors = 1 )
+(Hamt,vals,vecs) = F1crys.space_Hamiltonian(n_units = 50,PBC=0, eig_spectra = 1, eig_vectors = 1 )
 #print(Hamt)
 
 
+fig, ax = subplots();ax.plot(xA, vecs[:,49]);
+ax.set_ylabel('Amplitude');
+ax.set_xlabel('position');
+show(fig);
+fig.savefig('./Edge_states.pdf')
+ 
 
 
